@@ -40,7 +40,7 @@ HOMEWORK_STATUSES = {
 
 
 def send_message(bot, message):
-    """Метод для отправки сообщения ботом"""
+    """Метод для отправки сообщения ботом."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except MessageError('Бот не смог отправить сообщение'):
@@ -50,7 +50,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Запрос к эндпоинту API-сервиса Практикум-Домашка"""
+    """Запрос к эндпоинту API-сервиса Практикум-Домашка."""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
@@ -63,7 +63,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверяем ответ API на корректность"""
+    """Проверяем ответ API на корректность."""
     if type(response['homeworks']) != list:
         logger.error('API-сервис выдал другой тип данных')
         raise Exception('API-сервис выдал другой тип данных')
@@ -79,7 +79,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекаем информацию о статусе домашней работы"""
+    """Извлекаем информацию о статусе домашней работы."""
     if 'homework_name' not in homework:
         logger.error('Нет ключа homework_name')
         raise KeyError('Нет ключа homework_name')
@@ -95,7 +95,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Проверяем доступность переменных окружения"""
+    """Проверяем доступность переменных окружения."""
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN:
         return True
     else:
@@ -104,7 +104,7 @@ def check_tokens():
 
 
 def main():
-    """Основная логика работы бота"""
+    """Основная логика работы бота."""
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     check_tokens()
     while True:
