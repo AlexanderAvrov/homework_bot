@@ -1,16 +1,14 @@
 class ServerError(Exception):
     """Исключение ошибки сервера."""
 
-    pass
-
-
-class MessageError(Exception):
-    """Исключение ошибки отправки сообщения."""
-
-    pass
-
 
 class VerdictError(Exception):
     """Исключение поиска вердикта."""
 
-    pass
+
+class RequestError(Exception):
+    """Исключение запроса."""
+
+
+class JsonError(Exception):
+    """Исключение обработки ответа API."""
