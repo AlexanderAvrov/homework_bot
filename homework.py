@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 
 from exceptions import JsonError, RequestError, ServerError, VerdictError
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
+
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('yap_token')
@@ -69,12 +73,12 @@ def check_response(response):
     if not isinstance(response, dict):
         message = 'API-сервис выдал другой тип данных'
         logger.error(message)
-        raise Exception(message)
+        raise TypeError(message)
 
     if not isinstance(response['homeworks'], list):
         message = 'API-сервис выдал другой тип данных'
         logger.error(message)
-        raise Exception(message)
+        raise TypeError(message)
 
     if 'homeworks' not in response:
         logger.error('В ответе нет ключа homeworks')
@@ -157,7 +161,4 @@ if __name__ == '__main__':
         filemode='w',
         format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
     )
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler())
     main()
