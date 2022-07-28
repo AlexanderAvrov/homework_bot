@@ -35,10 +35,12 @@ VERDICTS = {
 def send_message(bot, message):
     """Метод для отправки сообщения ботом."""
     logger.debug('Бот собирается отправить сообщение')
+    message_err_send = 'Бот не смог отправить сообщение'
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-    except telegram.error.TelegramError('Бот не смог отправить сообщение'):
-        logger.error('Ошибка отправки ботом сообщения')
+    except Exception:
+        logger.error(message_err_send)
+        raise telegram.error.TelegramError(message_err_send)
     else:
         logger.info('Бот отправил сообщение')
 
@@ -46,50 +48,52 @@ def send_message(bot, message):
 def get_api_answer(current_timestamp):
     """Запрос к эндпоинту API-сервиса Практикум-Домашка."""
     logger.debug('Собираемся сделать запрос к API Практикума')
+    message_exc_request = 'Ошибка запроса к Эндпоинту'
+    message_exc_json = 'Ошибка расшифровки ответа API'
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    except RequestError('Ошибка запроса к Эндпоинту'):
-        logger.error('Ошибка запроса к Эндпоинту')
+    except RequestError(message_exc_request):
+        logger.error(message_exc_request)
 
     if response.status_code != HTTPStatus.OK:
         message = 'API-сервиса Практикум-Домашка не отвечает'
         logger.error(message)
         raise ServerError(message)
-    logger.info('Получили ответ от API Практикум-Домашка')
 
+    logger.info('Получили ответ от API Практикум-Домашка')
     try:
         response = response.json()
-    except JsonError('Ошибка расшифровки ответа API'):
-        logger.error('Ошибка расшифровки ответа API')
 
-    return response
+        return response
+    except JsonError(message_exc_json):
+        logger.error(message_exc_json)
 
 
 def check_response(response):
     """Проверяем ответ API на корректность."""
     logger.debug('Собираемся проверить ответ API')
+    message_err_type = 'API-сервис выдал другой тип данных'
+    message_err_key = 'В ответе нет ключа homeworks'
     if not isinstance(response, dict):
-        message = 'API-сервис выдал другой тип данных'
-        logger.error(message)
-        raise TypeError(message)
+        logger.error(message_err_type)
+        raise TypeError(message_err_type)
 
     if not isinstance(response['homeworks'], list):
-        message = 'API-сервис выдал другой тип данных'
-        logger.error(message)
-        raise TypeError(message)
+        logger.error(message_err_type)
+        raise TypeError(message_err_type)
 
     if 'homeworks' not in response:
-        logger.error('В ответе нет ключа homeworks')
-        raise Exception('В ответе нет ключа homeworks')
+        logger.error(message_err_key)
+        raise Exception(message_err_key)
 
     try:
         return response.get('homeworks')
-    except Exception("Нет ключа homeworks в ответе"):
-        logger.error('Нет ключа homeworks в ответе')
+    except Exception(message_err_key):
+        logger.error(message_err_key)
     else:
-        logger.debug('Передали response в функцию parse_status')
+        logger.debug('Проверили response')
 
 
 def parse_status(homework):
@@ -121,16 +125,12 @@ def check_tokens():
         logger.debug('Переменные доступны')
 
         return True
-    else:
-        logger.error('Токен Практикум-Домашка или Токен бота недоступен')
-
-        return False
 
 
 def main():
     """Основная логика работы бота."""
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    if check_tokens() is False:
+    if not check_tokens():
         logger.critical('Токены или чат_ид недоступны')
         sys.exit(0)
     send_message(bot, 'Бот начал свою работу')
@@ -144,12 +144,13 @@ def main():
                 send_message(bot, status)
             else:
                 logger.debug('Нет новых статусов')
-                pass
 
             current_timestamp = response['current_date']
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
+        except (JsonError, RequestError, ServerError, VerdictError) as error:
+            send_message(bot, error)
         finally:
             time.sleep(RETRY_TIME)
 
