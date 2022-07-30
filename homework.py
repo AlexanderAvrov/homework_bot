@@ -38,7 +38,7 @@ def send_message(bot, message):
     message_err_send = 'Бот не смог отправить сообщение'
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-    except Exception:
+    except telegram.error.TelegramError:
         logger.error(message_err_send)
         raise telegram.error.TelegramError(message_err_send)
     else:
@@ -67,8 +67,10 @@ def get_api_answer(current_timestamp):
         response = response.json()
 
         return response
-    except JsonError(message_exc_json):
+
+    except Exception():
         logger.error(message_exc_json)
+        raise JsonError(message_exc_json)
 
 
 def check_response(response):
@@ -76,11 +78,14 @@ def check_response(response):
     logger.debug('Собираемся проверить ответ API')
     message_err_type = 'API-сервис выдал другой тип данных'
     message_err_key = 'В ответе нет ключа homeworks'
+    message_err_key_time = 'В ответе нет ключа current_date'
     if not isinstance(response, dict):
         logger.error(message_err_type)
         raise TypeError(message_err_type)
 
-    if not isinstance(response['homeworks'], list):
+    home_works = response.get('homeworks')
+
+    if not isinstance(home_works, list):
         logger.error(message_err_type)
         raise TypeError(message_err_type)
 
@@ -88,12 +93,11 @@ def check_response(response):
         logger.error(message_err_key)
         raise Exception(message_err_key)
 
-    try:
-        return response.get('homeworks')
-    except Exception(message_err_key):
-        logger.error(message_err_key)
-    else:
-        logger.debug('Проверили response')
+    if 'current_date' not in response:
+        logger.error(message_err_key_time)
+        raise Exception(message_err_key_time)
+
+    return home_works
 
 
 def parse_status(homework):
@@ -135,22 +139,25 @@ def main():
         sys.exit(0)
     send_message(bot, 'Бот начал свою работу')
     current_timestamp = int(time.time())
+    sended_error_message = ''
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            homework = check_response(response)
-            if len(homework) > 0:
-                status = parse_status(homework[0])
+            homeworks = check_response(response)
+            if len(homeworks) > 0:
+                status = parse_status(homeworks[0])
                 send_message(bot, status)
             else:
                 logger.debug('Нет новых статусов')
 
             current_timestamp = response['current_date']
+        except telegram.error.TelegramError:
+            logger.error('Сообщение в Телеграмм не отправляются')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            send_message(bot, message)
-        except (JsonError, RequestError, ServerError, VerdictError) as error:
-            send_message(bot, error)
+            if sended_error_message != message:
+                send_message(bot, message)
+            sended_error_message = message
         finally:
             time.sleep(RETRY_TIME)
 
