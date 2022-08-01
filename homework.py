@@ -39,7 +39,6 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except telegram.error.TelegramError:
-        logger.error(message_err_send)
         raise telegram.error.TelegramError(message_err_send)
     else:
         logger.info('Бот отправил сообщение')
@@ -83,15 +82,15 @@ def check_response(response):
         logger.error(message_err_type)
         raise TypeError(message_err_type)
 
+    if 'homeworks' not in response:
+        logger.error(message_err_key)
+        raise Exception(message_err_key)
+
     home_works = response.get('homeworks')
 
     if not isinstance(home_works, list):
         logger.error(message_err_type)
         raise TypeError(message_err_type)
-
-    if 'homeworks' not in response:
-        logger.error(message_err_key)
-        raise Exception(message_err_key)
 
     if 'current_date' not in response:
         logger.error(message_err_key_time)
@@ -144,7 +143,7 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
-            if len(homeworks) > 0:
+            if homeworks > 0:
                 status = parse_status(homeworks[0])
                 send_message(bot, status)
             else:
