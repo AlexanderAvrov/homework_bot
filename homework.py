@@ -136,7 +136,6 @@ def main():
     if not check_tokens():
         logger.critical('Токены или чат_ид недоступны')
         sys.exit(0)
-    send_message(bot, 'Бот начал свою работу')
     current_timestamp = int(time.time())
     sended_error_message = ''
     while True:
